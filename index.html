@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>給与帳</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap');
+
+  :root{
+    --paper:#F7F5F0;
+    --paper-card:#FFFFFF;
+    --ink:#1C1B19;
+    --ink-soft:#5A574F;
+    --ink-faint:#8B8577;
+    --line:#DDD8CC;
+    --line-strong:#C6C0AF;
+    --hourly:#3D5A47;
+    --hourly-bg:#E9EFE9;
+    --hourly-deep:#243A2B;
+    --perf:#B8562F;
+    --perf-bg:#F7E9E1;
+    --perf-deep:#7A3517;
+    --stamp:#B8562F;
+    --danger:#A32D2D;
+  }
+
+  *{box-sizing:border-box;}
+  body{margin:0;}
+  .app{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    background:var(--paper);
+    color:var(--ink);
+    padding:0;
+    max-width:920px;
+    margin:0 auto;
+    line-height:1.6;
+  }
+
+  .ledger-header{
+    padding:28px 24px 20px;
+    border-bottom:2px solid var(--ink);
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    flex-wrap:wrap;
+    gap:12px;
+  }
+  .ledger-title{
+    font-size:24px;
+    font-weight:900;
+    letter-spacing:0.06em;
+    margin:0;
+  }
+  .ledger-sub{
+    font-size:12px;
+    color:var(--ink-faint);
+    margin:4px 0 0;
+    letter-spacing:0.04em;
+  }
+  .month-nav{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .month-nav button{
+    background:none;
+    border:1px solid var(--line-strong);
+    border-radius:4px;
+    width:30px;
+    height:30px;
+    font-size:15px;
+    color:var(--ink);
+    cursor:pointer;
+  }
+  .month-nav button:hover{background:var(--paper-card);}
+  .month-label{
+    font-size:16px;
+    font-weight:700;
+    min-width:92px;
+    text-align:center;
+  }
+
+  .summary-row{
+    display:grid;
+    grid-template-columns:1fr 1fr 1fr;
+    gap:1px;
+    background:var(--line);
+    margin:0 24px;
+    border:1px solid var(--line);
+    margin-top:20px;
+  }
+  .summary-cell{
+    background:var(--paper-card);
+    padding:16px 18px;
+    position:relative;
+  }
+  .summary-cell .label{
+    font-size:11px;
+    color:var(--ink-faint);
+    letter-spacing:0.08em;
+    display:block;
+    margin-bottom:6px;
+  }
+  .summary-cell .value{
+    font-size:26px;
+    font-weight:900;
+    font-variant-numeric:tabular-nums;
+    letter-spacing:0.01em;
+  }
+  .summary-cell .yen{font-size:15px; font-weight:700; margin-right:2px;}
+  .stamp{
+    position:absolute;
+    top:10px;
+    right:12px;
+    font-size:10px;
+    font-weight:700;
+    padding:2px 8px;
+    border:1.5px solid;
+    border-radius:3px;
+    letter-spacing:0.1em;
+    transform:rotate(-6deg);
+  }
+  .stamp.kakutei{color:var(--hourly-deep); border-color:var(--hourly-deep);}
+  .stamp.mikomi{color:var(--stamp); border-color:var(--stamp);}
+
+  .section{
+    padding:22px 24px;
+  }
+  .section-title{
+    font-size:14px;
+    font-weight:700;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin:0 0 12px;
+  }
+  .dot{width:9px; height:9px; border-radius:50%; display:inline-block;}
+  .dot.hourly{background:var(--hourly);}
+  .dot.perf{background:var(--perf);}
+
+  .job-cards{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:16px;
+  }
+  @media(max-width:640px){ .job-cards{grid-template-columns:1fr;} }
+
+  .job-card{
+    background:var(--paper-card);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:16px 18px;
+  }
+  .job-card.hourly{border-top:3px solid var(--hourly);}
+  .job-card.perf{border-top:3px solid var(--perf);}
+  .job-card h3{
+    font-size:14px;
+    margin:0 0 12px;
+    font-weight:700;
+  }
+  .field-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:8px;
+    gap:8px;
+  }
+  .field-row label{
+    font-size:12px;
+    color:var(--ink-soft);
+    flex-shrink:0;
+  }
+  .field-row input[type=text], .field-row input[type=number]{
+    border:1px solid var(--line-strong);
+    border-radius:5px;
+    padding:6px 8px;
+    font-family:inherit;
+    font-size:13px;
+    width:110px;
+    text-align:right;
+    background:var(--paper);
+    color:var(--ink);
+  }
+  .field-row input:focus{outline:2px solid var(--ink-faint); outline-offset:1px;}
+  .job-name-input{
+    width:100% !important;
+    text-align:left !important;
+    font-weight:700;
+    font-size:14px !important;
+    margin-bottom:10px;
+    border:none !important;
+    border-bottom:1px solid var(--line) !important;
+    border-radius:0 !important;
+    padding:4px 2px !important;
+    background:none !important;
+  }
+  .mini-note{font-size:11px; color:var(--ink-faint); margin-top:8px;}
+
+  .entry-form{
+    background:var(--paper-card);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:16px 18px;
+  }
+  .entry-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(120px, 1fr));
+    gap:10px;
+    align-items:end;
+  }
+  .entry-grid .f{display:flex; flex-direction:column; gap:4px;}
+  .entry-grid label{font-size:11px; color:var(--ink-soft);}
+  .entry-grid select, .entry-grid input{
+    border:1px solid var(--line-strong);
+    border-radius:5px;
+    padding:8px;
+    font-family:inherit;
+    font-size:13px;
+    background:var(--paper);
+    color:var(--ink);
+    width:100%;
+  }
+  .entry-grid input:focus, .entry-grid select:focus{outline:2px solid var(--ink-faint); outline-offset:1px;}
+  .add-btn{
+    grid-column:1/-1;
+    background:var(--ink);
+    color:var(--paper);
+    border:none;
+    border-radius:6px;
+    padding:10px;
+    font-family:inherit;
+    font-size:13px;
+    font-weight:700;
+    cursor:pointer;
+    margin-top:4px;
+  }
+  .add-btn:hover{background:var(--hourly-deep);}
+  .add-btn:active{transform:scale(0.99);}
+
+  .perf-only{display:none;}
+
+  table.record-table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:13px;
+    margin-top:4px;
+  }
+  table.record-table th{
+    text-align:left;
+    font-size:11px;
+    color:var(--ink-faint);
+    font-weight:500;
+    padding:8px 6px;
+    border-bottom:1px solid var(--line-strong);
+    letter-spacing:0.03em;
+  }
+  table.record-table td{
+    padding:9px 6px;
+    border-bottom:1px solid var(--line);
+    font-variant-numeric:tabular-nums;
+  }
+  table.record-table tr:last-child td{border-bottom:none;}
+  .amount-cell{text-align:right; font-weight:700;}
+  .job-tag{
+    display:inline-block;
+    font-size:10px;
+    padding:2px 7px;
+    border-radius:3px;
+    font-weight:700;
+  }
+  .job-tag.hourly{background:var(--hourly-bg); color:var(--hourly-deep);}
+  .job-tag.perf{background:var(--perf-bg); color:var(--perf-deep);}
+  .del-btn{
+    background:none;
+    border:none;
+    color:var(--ink-faint);
+    cursor:pointer;
+    font-size:15px;
+    padding:2px 6px;
+  }
+  .del-btn:hover{color:var(--danger);}
+  .empty-state{
+    text-align:center;
+    padding:28px 10px;
+    color:var(--ink-faint);
+    font-size:13px;
+  }
+
+  .forecast-note{
+    font-size:12px;
+    color:var(--ink-soft);
+    background:var(--paper-card);
+    border:1px dashed var(--line-strong);
+    border-radius:8px;
+    padding:12px 14px;
+    margin-top:14px;
+  }
+  .sr-only{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0);}
+</style>
+</head>
+<body>
+<div class="app">
+  <h2 class="sr-only">バイト2つの時給・成果報酬から月収を予測し、出退勤記録をもとに実績給与を確認できる給与帳アプリです。</h2>
+
+  <div class="ledger-header">
+    <div>
+      <p class="ledger-title">給与帳</p>
+      <p class="ledger-sub">バイト収入 見込みと確定</p>
+    </div>
+    <div class="month-nav">
+      <button id="prevMonth" aria-label="前の月">‹</button>
+      <span class="month-label" id="monthLabel">2026年7月</span>
+      <button id="nextMonth" aria-label="次の月">›</button>
+    </div>
+  </div>
+
+  <div class="summary-row">
+    <div class="summary-cell">
+      <span class="stamp mikomi">見込</span>
+      <span class="label">今月の予測収入</span>
+      <span class="value"><span class="yen">¥</span><span id="forecastTotal">0</span></span>
+    </div>
+    <div class="summary-cell">
+      <span class="stamp kakutei">確定</span>
+      <span class="label">今月の実績（記録分）</span>
+      <span class="value"><span class="yen">¥</span><span id="actualTotal">0</span></span>
+    </div>
+    <div class="summary-cell">
+      <span class="label">今月の勤務時間</span>
+      <span class="value"><span id="totalHours">0</span><span style="font-size:14px;font-weight:700;">時間</span></span>
+    </div>
+  </div>
+
+  <div class="section">
+    <p class="section-title">バイト先の設定</p>
+    <div class="job-cards">
+      <div class="job-card hourly">
+        <input type="text" id="job1Name" class="job-name-input" value="バイトA（時給制）">
+        <div class="field-row">
+          <label for="job1Rate">時給（円）</label>
+          <input type="number" id="job1Rate" min="0" step="1" value="1100">
+        </div>
+        <div class="field-row">
+          <label for="job1PlannedHours">今月の予定時間</label>
+          <input type="number" id="job1PlannedHours" min="0" step="0.5" value="40">
+        </div>
+        <p class="mini-note">見込み収入 = 時給 × 予定時間</p>
+      </div>
+      <div class="job-card perf">
+        <input type="text" id="job2Name" class="job-name-input" value="バイトB（成果制）">
+        <div class="field-row">
+          <label for="job2UnitPay">単価（円/件）</label>
+          <input type="number" id="job2UnitPay" min="0" step="1" value="500">
+        </div>
+        <div class="field-row">
+          <label for="job2PlannedUnits">今月の予定件数</label>
+          <input type="number" id="job2PlannedUnits" min="0" step="1" value="30">
+        </div>
+        <p class="mini-note">見込み収入 = 単価 × 予定件数</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <p class="section-title">勤務・成果を記録</p>
+    <div class="entry-form">
+      <div class="entry-grid">
+        <div class="f">
+          <label for="entryJob">バイト先</label>
+          <select id="entryJob">
+            <option value="1">バイトA（時給制）</option>
+            <option value="2">バイトB（成果制）</option>
+          </select>
+        </div>
+        <div class="f">
+          <label for="entryDate">日付</label>
+          <input type="date" id="entryDate">
+        </div>
+        <div class="f hourly-only" id="startField">
+          <label for="entryStart">出勤時刻</label>
+          <input type="time" id="entryStart" value="09:00">
+        </div>
+        <div class="f hourly-only" id="endField">
+          <label for="entryEnd">退勤時刻</label>
+          <input type="time" id="entryEnd" value="17:00">
+        </div>
+        <div class="f perf-only" id="unitsField">
+          <label for="entryUnits">件数・成果数</label>
+          <input type="number" id="entryUnits" min="0" step="1" value="5">
+        </div>
+        <button class="add-btn" id="addEntry">記録を追加</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <p class="section-title">今月の記録一覧</p>
+    <div id="recordsWrap">
+      <table class="record-table" id="recordsTable">
+        <thead>
+          <tr>
+            <th>日付</th>
+            <th>バイト先</th>
+            <th>内容</th>
+            <th style="text-align:right;">金額</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="recordsBody"></tbody>
+      </table>
+      <div class="empty-state" id="emptyState">この月の記録はまだありません。上のフォームから追加してください。</div>
+    </div>
+    <p class="forecast-note" id="forecastNote"></p>
+  </div>
+</div>
+
+<script>
+(function(){
+  var STORAGE_KEY = 'wage_tracker_data_v1';
+  var today = new Date();
+  var viewYear = today.getFullYear();
+  var viewMonth = today.getMonth();
+
+  var state = {
+    jobs: {
+      1: { name:'バイトA（時給制）', type:'hourly', rate:1100, plannedHours:40 },
+      2: { name:'バイトB（成果制）', type:'performance', unitPay:500, plannedUnits:30 }
+    },
+    records: []
+  };
+
+  function loadState(){
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if(raw){
+        var parsed = JSON.parse(raw);
+        if(parsed && parsed.jobs && parsed.records){
+          state = parsed;
+        }
+      }
+    }catch(e){ console.error('load error', e); }
+  }
+  function saveState(){
+    try{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }catch(e){ console.error('save error', e); }
+  }
+
+  function fmtYen(n){
+    return Math.round(n).toLocaleString('ja-JP');
+  }
+  function fmtHours(n){
+    return (Math.round(n*10)/10).toString();
+  }
+  function pad(n){ return n<10? '0'+n : ''+n; }
+  function monthKey(y,m){ return y+'-'+pad(m+1); }
+
+  function els(){
+    return {
+      job1Name: document.getElementById('job1Name'),
+      job1Rate: document.getElementById('job1Rate'),
+      job1PlannedHours: document.getElementById('job1PlannedHours'),
+      job2Name: document.getElementById('job2Name'),
+      job2UnitPay: document.getElementById('job2UnitPay'),
+      job2PlannedUnits: document.getElementById('job2PlannedUnits'),
+      entryJob: document.getElementById('entryJob'),
+      entryDate: document.getElementById('entryDate'),
+      entryStart: document.getElementById('entryStart'),
+      entryEnd: document.getElementById('entryEnd'),
+      entryUnits: document.getElementById('entryUnits'),
+      startField: document.getElementById('startField'),
+      endField: document.getElementById('endField'),
+      unitsField: document.getElementById('unitsField'),
+      addEntry: document.getElementById('addEntry'),
+      recordsBody: document.getElementById('recordsBody'),
+      emptyState: document.getElementById('emptyState'),
+      forecastTotal: document.getElementById('forecastTotal'),
+      actualTotal: document.getElementById('actualTotal'),
+      totalHours: document.getElementById('totalHours'),
+      monthLabel: document.getElementById('monthLabel'),
+      prevMonth: document.getElementById('prevMonth'),
+      nextMonth: document.getElementById('nextMonth'),
+      forecastNote: document.getElementById('forecastNote')
+    };
+  }
+  var E = els();
+
+  function fillFormFromState(){
+    E.job1Name.value = state.jobs[1].name;
+    E.job1Rate.value = state.jobs[1].rate;
+    E.job1PlannedHours.value = state.jobs[1].plannedHours;
+    E.job2Name.value = state.jobs[2].name;
+    E.job2UnitPay.value = state.jobs[2].unitPay;
+    E.job2PlannedUnits.value = state.jobs[2].plannedUnits;
+    updateJobSelectLabels();
+  }
+
+  function updateJobSelectLabels(){
+    var opts = E.entryJob.options;
+    opts[0].text = state.jobs[1].name;
+    opts[1].text = state.jobs[2].name;
+  }
+
+  function toggleEntryFields(){
+    var jobId = E.entryJob.value;
+    var isHourly = state.jobs[jobId].type === 'hourly';
+    E.startField.style.display = isHourly ? 'flex' : 'none';
+    E.endField.style.display = isHourly ? 'flex' : 'none';
+    E.unitsField.style.display = isHourly ? 'none' : 'flex';
+  }
+
+  function calcHoursFromTimes(start, end){
+    var s = start.split(':').map(Number);
+    var e = end.split(':').map(Number);
+    var startMin = s[0]*60 + s[1];
+    var endMin = e[0]*60 + e[1];
+    var diff = endMin - startMin;
+    if(diff < 0) diff += 24*60;
+    return diff/60;
+  }
+
+  function addRecord(){
+    var jobId = E.entryJob.value;
+    var date = E.entryDate.value;
+    if(!date){ alert('日付を入力してください'); return; }
+    var job = state.jobs[jobId];
+    var record = { id: Date.now()+'-'+Math.random().toString(36).slice(2,7), jobId: jobId, date: date };
+
+    if(job.type === 'hourly'){
+      var start = E.entryStart.value;
+      var end = E.entryEnd.value;
+      if(!start || !end){ alert('出勤・退勤時刻を入力してください'); return; }
+      var hours = calcHoursFromTimes(start, end);
+      if(hours <= 0){ alert('退勤時刻は出勤時刻より後にしてください'); return; }
+      record.start = start;
+      record.end = end;
+      record.hours = hours;
+      record.amount = hours * (Number(job.rate) || 0);
+    } else {
+      var units = Number(E.entryUnits.value);
+      if(!units || units < 0){ alert('件数を入力してください'); return; }
+      record.units = units;
+      record.amount = units * (Number(job.unitPay) || 0);
+    }
+
+    state.records.push(record);
+    saveState();
+    render();
+  }
+
+  function deleteRecord(id){
+    state.records = state.records.filter(function(r){ return r.id !== id; });
+    saveState();
+    render();
+  }
+
+  function recordsForViewMonth(){
+    var key = monthKey(viewYear, viewMonth);
+    return state.records.filter(function(r){ return r.date && r.date.slice(0,7) === key; })
+      .sort(function(a,b){ return a.date < b.date ? -1 : 1; });
+  }
+
+  function renderRecords(){
+    var list = recordsForViewMonth();
+    E.recordsBody.innerHTML = '';
+    if(list.length === 0){
+      E.emptyState.style.display = 'block';
+    } else {
+      E.emptyState.style.display = 'none';
+      list.forEach(function(r){
+        var job = state.jobs[r.jobId];
+        var tr = document.createElement('tr');
+
+        var tdDate = document.createElement('td');
+        tdDate.textContent = r.date;
+        tr.appendChild(tdDate);
+
+        var tdJob = document.createElement('td');
+        var tag = document.createElement('span');
+        tag.className = 'job-tag ' + (job.type === 'hourly' ? 'hourly' : 'perf');
+        tag.textContent = job.name;
+        tdJob.appendChild(tag);
+        tr.appendChild(tdJob);
+
+        var tdDetail = document.createElement('td');
+        if(job.type === 'hourly'){
+          tdDetail.textContent = r.start + '〜' + r.end + '（' + fmtHours(r.hours) + '時間）';
+        } else {
+          tdDetail.textContent = r.units + '件';
+        }
+        tr.appendChild(tdDetail);
+
+        var tdAmount = document.createElement('td');
+        tdAmount.className = 'amount-cell';
+        tdAmount.textContent = '¥' + fmtYen(r.amount);
+        tr.appendChild(tdAmount);
+
+        var tdDel = document.createElement('td');
+        var btn = document.createElement('button');
+        btn.className = 'del-btn';
+        btn.setAttribute('aria-label', '削除');
+        btn.innerHTML = '&times;';
+        btn.addEventListener('click', function(){ deleteRecord(r.id); });
+        tdDel.appendChild(btn);
+        tr.appendChild(tdDel);
+
+        E.recordsBody.appendChild(tr);
+      });
+    }
+  }
+
+  function renderSummary(){
+    var list = recordsForViewMonth();
+    var actual = 0, hours = 0;
+    list.forEach(function(r){
+      actual += r.amount;
+      if(state.jobs[r.jobId].type === 'hourly'){ hours += r.hours; }
+    });
+
+    var j1 = state.jobs[1], j2 = state.jobs[2];
+    var forecast = (Number(j1.rate)||0) * (Number(j1.plannedHours)||0)
+                  + (Number(j2.unitPay)||0) * (Number(j2.plannedUnits)||0);
+
+    E.forecastTotal.textContent = fmtYen(forecast);
+    E.actualTotal.textContent = fmtYen(actual);
+    E.totalHours.textContent = fmtHours(hours);
+
+    var remain = forecast - actual;
+    if(remain > 0){
+      E.forecastNote.textContent = '見込み額まであと ¥' + fmtYen(remain) + '。設定した予定時間・予定件数に対する記録の進み具合の目安です。';
+    } else {
+      E.forecastNote.textContent = '実績が見込み額に到達しました（見込み比 +¥' + fmtYen(-remain) + '）。';
+    }
+  }
+
+  function renderMonthLabel(){
+    E.monthLabel.textContent = viewYear + '年' + (viewMonth+1) + '月';
+  }
+
+  function render(){
+    renderMonthLabel();
+    renderRecords();
+    renderSummary();
+  }
+
+  E.job1Name.addEventListener('input', function(){ state.jobs[1].name = E.job1Name.value; updateJobSelectLabels(); saveState(); renderRecords(); });
+  E.job1Rate.addEventListener('input', function(){ state.jobs[1].rate = Number(E.job1Rate.value)||0; saveState(); renderSummary(); });
+  E.job1PlannedHours.addEventListener('input', function(){ state.jobs[1].plannedHours = Number(E.job1PlannedHours.value)||0; saveState(); renderSummary(); });
+  E.job2Name.addEventListener('input', function(){ state.jobs[2].name = E.job2Name.value; updateJobSelectLabels(); saveState(); renderRecords(); });
+  E.job2UnitPay.addEventListener('input', function(){ state.jobs[2].unitPay = Number(E.job2UnitPay.value)||0; saveState(); renderSummary(); });
+  E.job2PlannedUnits.addEventListener('input', function(){ state.jobs[2].plannedUnits = Number(E.job2PlannedUnits.value)||0; saveState(); renderSummary(); });
+
+  E.entryJob.addEventListener('change', toggleEntryFields);
+  E.addEntry.addEventListener('click', addRecord);
+
+  E.prevMonth.addEventListener('click', function(){
+    viewMonth -= 1;
+    if(viewMonth < 0){ viewMonth = 11; viewYear -= 1; }
+    render();
+  });
+  E.nextMonth.addEventListener('click', function(){
+    viewMonth += 1;
+    if(viewMonth > 11){ viewMonth = 0; viewYear += 1; }
+    render();
+  });
+
+  loadState();
+  fillFormFromState();
+  toggleEntryFields();
+  E.entryDate.value = today.getFullYear()+'-'+pad(today.getMonth()+1)+'-'+pad(today.getDate());
+  render();
+})();
+</script>
+</body>
+</html>
